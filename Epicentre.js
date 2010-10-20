@@ -2,6 +2,7 @@ canvas=ctx=ctime=tstart=tstep=0;
 cw=640; ch=480;
 M = Math;
 dead = false;
+img=null;
 
 function timeUpdate() {
 	ntime = (new Date).getTime();
@@ -34,14 +35,14 @@ function hsl(h, s, l){
 			if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
 			return p;
 		}
-		
+
 		var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
 		var p = 2 * l - q;
 		r = hue2rgb(p, q, h + 1/3);
 		g = hue2rgb(p, q, h);
 		b = hue2rgb(p, q, h - 1/3);
 	}
-	
+
 	return [r * 255, g * 255, b * 255];
 }
 
@@ -90,23 +91,42 @@ function plasma(x, y, w, h, t) {
 	});
 }
 
+function rotozoom(x, y, pic, t) {
+    ctx.save();
+    th = 0.175 * t;
+    zs = (0.1 * t) % 4;
+    if (zs > 2) {
+        zs = -(zs-4);
+    }
+    z = 0.5+zs;
+    console.log(z);
+    ctx.translate(x,y);
+    ctx.rotate(th);
+    ctx.scale(z,z);
+    ctx.drawImage(pic, -(pic.width/2), -(pic.height/2));
+    ctx.restore();
+}
+
 function main() {
 	timeUpdate();
-	
+
 	ctx.clearRect(0, 0, cw, ch);
-	
+    
+        rotozoom(500,300, img, tstart/100);
+
 	plasma(100, 100, 250, 250, tstart / 100);
 	rasterBar(tstart / 20 % ch, M.floor(M.sin(tstart / 100) * 2), 12);
-	rasterBar(tstart / 10 % ch, 0, 12);
-	
+        rasterBar(tstart / 10 % ch, 0, 12);
+        
 	if(!dead) setTimeout(main, 1000/60);
 }
 
 function ready() {
-	canvas = document.getElementById('epicentre');
-	ctx = canvas.getContext('2d');
-	
-	main();
+    canvas = document.getElementById('epicentre');
+    ctx = canvas.getContext('2d');
+    img = document.getElementById('pic');
+    
+    main();
 }
 
 function stop() {
