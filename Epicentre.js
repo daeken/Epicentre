@@ -1,4 +1,4 @@
-canvas=ctx=ctime=tstart=tstep=0;
+cb=pcanvas=pctx=canvas=ctx=ctime=tstart=tstep=0;
 cw=640; ch=480;
 M = Math;
 dead = false;
@@ -129,24 +129,50 @@ function moire(x, y, t, s) {
 	}
 }
 
+function sineScreen(push, t) {
+	idata = ctx.createImageData(cw, ch);
+	id = idata.data;
+	od = ctx.getImageData(0, 0, cw, ch).data;
+	
+	for(o = 0, y = 0; y < ch; ++y) {
+		po = M.floor(M.sin(y * t) * push);
+		for(x = 0; x < cw; ++x, o += 4) {
+			tx = (x + po + cw) % cw;
+			oo = (tx + y * cw) * 4;
+			id[o] = od[oo];
+			id[o+1] = od[oo+1];
+			id[o+2] = od[oo+2];
+			id[o+3] = od[oo+3];
+		}
+	}
+	ctx.putImageData(idata, 0, 0);
+}
+
 function main() {
 	timeUpdate();
+	
+	cb ^= 1;
+	ctx = pctx[cb];
 	
 	ctx.clearRect(0, 0, cw, ch);
 	
 	g = M.floor(M.sin(tstart / 1000) * 10 + 10);
-	plasma(125, 125, 250, 250, tstart, g == 0 ? 1 : g);
+	plasma(100, 100, 250, 250, tstart, g == 0 ? 1 : g);
 	//rasterBar(tstart / 20 % ch, M.floor(M.sin(tstart / 100) * 2), 12);
 	//rasterBar(tstart / 10 % ch, 0, 12);
+	//moire(250, 250, tstart);
 	
-	moire(250, 250, tstart);
+	sineScreen((g - 10) / 2, tstart / 10);
+	
+	pcanvas[0].style.visibility = (cb == 0) ? 'visible' : 'hidden';
+	pcanvas[1].style.visibility = (cb == 1) ? 'visible' : 'hidden';
 	
 	if(!dead) setTimeout(main, 1000/60);
 }
 
 function ready() {
-	canvas = document.getElementById('epicentre');
-	ctx = canvas.getContext('2d');
+	pcanvas = [document.getElementById('a'), document.getElementById('b')];
+	pctx = [pcanvas[0].getContext('2d'), pcanvas[1].getContext('2d')];
 	
 	main();
 }
