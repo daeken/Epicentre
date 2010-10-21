@@ -19,8 +19,21 @@ function line(x1, y1, x2, y2, c) {
 	ctx.stroke();
 }
 
-function hsl(h, s, l){
-	h = ((h + 360) % 360) / 360;
+var chsl;
+
+function hsl(h, s, l, t) {
+	h = M.floor((h + 360) % 360);
+	
+	if(t === undefined && s == 100 && l == 50) {
+		if(chsl == undefined) {
+			chsl = [];
+			for(var i = 0; i < 360; ++i)
+				chsl[i] = hsl(i, s, l, 0);
+		}
+		return chsl[h];
+	}
+	
+	h = h / 360;
 	s = s / 100;
 	l = l / 100;
 	if(s == 0){
@@ -76,18 +89,44 @@ function distance(x1, y1, x2, y2) {
 	return M.sqrt(x1*x1 + y1*y1);
 }
 
-function plasma(x, y, w, h, t) {
+function plasma(x, y, w, h, t, g) {
 	pixels(x, y, x+w, y+h, function(p) {
-		cx = (M.sin(t) + 1.0) / 2.0 * w;
-		cy = (M.cos(t) + 1.0) / 2.0 * h;
-		for(i = 0; i < w; ++i)
-			for(j = 0; j < h; ++j) {
-				a = M.sin((i + t) / 40.74);
-				b = M.sin(distance(i, j, cx, cy) / 40.74);
-				c = (a + b + 2.0) / 4.0;
-				p(i, j, hsl(c * 360, 100, 50));
+		cx = M.sin(t) * t;
+		cy = t;
+		for(i = 0; i < w; i += g)
+			for(j = 0; j < h; j += g) {
+				a = (M.sin((i + t) / 40.74) + 1.0) / 2.0;
+				b = (M.sin(distance(i, j, cx, cy) / 40.74) + 1.0) / 2.0;
+				c = (a + b) / 2;
+				c = hsl(c * 360, 100, 50);
+				for(gi = 0; gi < g; ++gi)
+					for(gj = 0; gj < g; ++gj)
+						p(i+gi, j+gj, c);
 			}
 	});
+}
+
+function circle(x, y, d, c) {
+	if(c!=undefined) ctx.strokeStyle = 'rgb(' + c[0] + ', ' + c[1] + ', ' + c[2] + ')';
+	ctx.beginPath();
+	ctx.arc(x, y, d, 0, M.PI*2, false);
+	ctx.stroke();
+}
+
+function concircle(x, y, c) {
+	for(var i = 1; i < 50; i += 1)
+		circle(x, y, i*2, c);
+}
+
+function moire(x, y, t, s) {
+	var xo = M.sin(t / 250) * 75;
+	var yo = M.cos(t / 250) * 75;
+	for(var i = 0; i < 6; ++i) {
+		var a = t * i / 1000;
+		var c = M.cos(a);
+		var s = M.sin(a);
+		concircle(x + xo * c - yo * s, y + yo * c + xo * s, [255, 255, 255]);
+	}
 }
 
 function main() {
@@ -95,9 +134,12 @@ function main() {
 	
 	ctx.clearRect(0, 0, cw, ch);
 	
-	plasma(100, 100, 250, 250, tstart / 100);
-	rasterBar(tstart / 20 % ch, M.floor(M.sin(tstart / 100) * 2), 12);
-	rasterBar(tstart / 10 % ch, 0, 12);
+	g = M.floor(M.sin(tstart / 1000) * 10 + 10);
+	plasma(125, 125, 250, 250, tstart, g == 0 ? 1 : g);
+	//rasterBar(tstart / 20 % ch, M.floor(M.sin(tstart / 100) * 2), 12);
+	//rasterBar(tstart / 10 % ch, 0, 12);
+	
+	moire(250, 250, tstart);
 	
 	if(!dead) setTimeout(main, 1000/60);
 }
